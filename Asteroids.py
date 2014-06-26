@@ -9,10 +9,6 @@ class Nau(Jugador):
         self.angle = 0
         self.v_angular = 250
         self.original_image = self.image
-        self.vx = 0
-        self.vy = 0
-        self.ax = 0
-        self.ay = 0
         self.a = 400
 
     def update(self, dt):
@@ -49,6 +45,9 @@ class Joc(object):
     def main(self, pantalla):
         rellotge = pygame.time.Clock()
         self.surt = False
+
+        self.amplada = pantalla.get_width()
+        self.alçada = pantalla.get_height()
 
         self.jugador = Nau("Imatges/Nau.png", 100, 100)
         self.grup_jugador = pygame.sprite.GroupSingle(self.jugador)
@@ -90,11 +89,14 @@ class Joc(object):
         self.grup_jugador.update(dt)
 
     def draw(self, pantalla):
-        pantalla.blit(pygame.Surface((800, 600)), (0, 0))
+        pantalla.blit(pygame.Surface((self.amplada, self.alçada)), (0, 0))
         self.grup_jugador.draw(pantalla)
         pygame.display.flip()
 
 if __name__ == '__main__':
     pygame.init()
-    pantalla = pygame.display.set_mode((800, 600))
+    amplada = 800
+    alçada = 600
+    pantalla = pygame.display.set_mode((amplada, alçada))
     Joc().main(pantalla)
+    pygame.quit()
