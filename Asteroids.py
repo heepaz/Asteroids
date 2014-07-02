@@ -3,6 +3,21 @@ from math import sin, cos, radians
 from jugador import Jugador
 
 
+class Bala (pygame.sprite.Sprite):
+    def __init__(self, imatge, x, y, angle):
+        pygame.sprite.Sprite.__init__(self)
+        self.angle = angle + 90
+        self.image = pygame.transform.rotate(imatge, self.angle)
+        self.rect = self.image.get_rect()
+        self.rect.centerx = x
+        self.rect.centery = y
+        self.v = 300
+
+    def update(self, dt):
+        self.rect.x += self.v * cos(radians(self.angle)) * dt
+        self.rect.y -= self.v * sin(radians(self.angle)) * dt
+
+
 class Nau(Jugador):
     def __init__(self, imatge, x, y):
         Jugador.__init__(self, imatge, x, y)
@@ -10,16 +25,26 @@ class Nau(Jugador):
         self.v_angular = 250
         self.original_image = self.image
         self.a = 400
+        self.dispara = False
+        self.rellotge_refredament = pygame.time.Clock()
+        self.temps_ultim_tret = 0
+        self.temps_refredament = 0.5
 
-    def update(self, dt):
+    def update(self, dt, joc):
         self.ax = self.a * cos(radians(self.angle + 90))
         self.ay = -1 * self.a * sin(radians(self.angle + 90))
+
+        self.temps_ultim_tret += self.rellotge_refredament.tick() / 1000
+        if self.dispara and self.temps_ultim_tret > self.temps_refredament:
+            self.temps_ultim_tret = 0
+            self.dispara_bala(joc)
         if self.dreta and self.esquerra:
             pass
         elif self.dreta:
             self.gir(dt, 'dreta')
         elif self.esquerra:
             self.gir(dt, 'esquerra')
+
         if self.amunt:
             self.vx += self.ax * dt
             self.vy += self.ay * dt
@@ -40,6 +65,10 @@ class Nau(Jugador):
         self.rect = self.image.get_rect()
         self.rect.center = antic_centre
 
+    def dispara_bala(self, joc):
+        joc.grup_bales.add(Bala(joc.img_bala, self.rect.centerx,
+                                self.rect.centery, self.angle))
+
 
 class Joc(object):
     def main(self, pantalla):
@@ -51,6 +80,10 @@ class Joc(object):
 
         self.jugador = Nau("Imatges/Nau.png", 100, 100)
         self.grup_jugador = pygame.sprite.GroupSingle(self.jugador)
+
+        self.img_bala = pygame.image.load(
+            "Imatges/Sprites/12px-blue-comet.png")
+        self.grup_bales = pygame.sprite.Group()
 
         while not self.surt:
             dt = rellotge.tick(30)
@@ -76,6 +109,8 @@ class Joc(object):
             self.jugador.esquerra = True
         elif event.key == pygame.K_UP:
             self.jugador.amunt = True
+        elif event.key == pygame.K_SPACE:
+            self.jugador.dispara = True
 
     def gestiona_alliberament(self, event):
         if event.key == pygame.K_RIGHT:
@@ -84,12 +119,16 @@ class Joc(object):
             self.jugador.esquerra = False
         elif event.key == pygame.K_UP:
             self.jugador.amunt = False
+        elif event.key == pygame.K_SPACE:
+            self.jugador.dispara = False
 
     def update(self, dt):
-        self.grup_jugador.update(dt)
+        self.grup_jugador.update(dt, self)
+        self.grup_bales.update(dt)
 
     def draw(self, pantalla):
         pantalla.blit(pygame.Surface((self.amplada, self.alçada)), (0, 0))
+        self.grup_bales.draw(pantalla)
         self.grup_jugador.draw(pantalla)
         pygame.display.flip()
 
